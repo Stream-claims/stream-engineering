@@ -1,44 +1,53 @@
 # System Architecture
 
-Stream Claims is an AI-powered medical record review platform with three main components:
+AI-powered medical record review platform. Insurance professionals upload case documents; the system OCRs, segments, extracts, synthesizes, and produces structured outputs.
 
-## Data Flow
-1. **Customer Portal** (SvelteKit) — Users upload medical record PDFs
-2. **Backend** (Python Lambdas + CDK) — Processes documents through OCR, segmentation, extraction, synthesis, and PDF output pipelines
-3. **Data Engineering** (ECS + dbt) — Loads DynamoDB CDC data and OCR text into Redshift warehouse for analytics
+## Repositories
 
-## Technology Stack
-| Component | Technology |
-|---|---|
-| Frontend | SvelteKit 5, TypeScript, Tailwind, Flowbite |
-| Backend Runtime | Python 3.12, Docker Lambda images |
-| Infrastructure | AWS CDK (TypeScript) |
-| Orchestration | Step Functions, SQS |
-| OCR | Azure Document Intelligence |
-| LLM Providers | OpenAI, Anthropic, Google |
-| Embeddings | OpenAI text-embedding-3-large (3072 dim) |
-| Vector Search | OpenSearch Serverless |
-| Database | DynamoDB (single-table design) |
-| File Storage | S3 (per-customer buckets) |
-| Data Warehouse | Redshift Serverless |
-| ETL | dbt, ECS Fargate cron |
-| Auth | AWS Cognito |
-| Monitoring | Sentry, CloudWatch, LangSmith |
-| Deployment | SST v2 (portal), CDK (backend), CDK (data-eng) |
+| Repo | Stack | Purpose |
+|---|---|---|
+| `backend` | Python Lambdas, CDK (TypeScript) | Document processing pipeline + portal API (~40 lambdas, ~60 shared packages) |
+| `customer-portal` | SvelteKit, SST | Multi-tenant upload/review portal |
+| `data-engineering` | ECS, dbt, Redshift | CDC ingestion + analytics warehouse |
 
-## Pipeline Overview
+Each repo has its own `CLAUDE.md` with commands, patterns, and architecture details.
+
+## Core Infrastructure
+
+- **Compute**: Lambda (backend), ECS Fargate (data-eng batch jobs)
+- **Storage**: DynamoDB (single-table design), S3 (per-customer buckets), OpenSearch (vector search / RAG)
+- **Orchestration**: Step Functions, SQS
+- **Data warehouse**: Redshift Serverless + dbt models
+- **Auth**: Cognito
+- **Infra-as-code**: CDK (backend, data-eng), SST (portal)
+
+## Pipeline Flow
+
 ```
 Upload → Ingestion SF → Extract (SQS) → Synthesise (SQS) → Post-Synthesis SF → PDF Output SF
                                                                     ↓
-                                                            Sift/Dedup SF
-                                     Extract → OpenSearch Loader SF (RAG indexing)
+                                                              Sift/Dedup SF
+                                       Extract → OpenSearch Loader SF (RAG)
 
-DynamoDB CDC → S3 Landing Zone → ECS Loader → Redshift → dbt models
+DynamoDB CDC → S3 → ECS Loader → Redshift → dbt models
 ```
 
-## Repository Map
-| Repo | GitHub | Purpose |
-|---|---|---|
-| backend | Stream-claims/backend | CDK infra + Python Lambdas + ML packages |
-| customer-portal | Stream-claims/customer-portal | SvelteKit multi-tenant portal |
-| data-engineering | Stream-claims/data-engineering | ECS loader + dbt transformations |
+## Domain
+
+Stream processes **Workers' Compensation** and **Bodily Injury (BI)** insurance claims — many are complex medical claims spanning thousands of pages.
+
+A **case** is one insurance claim with uploaded documents. A **segment** is one constituent document within a case (e.g., a single medical record, one billing statement) — never a grouping of multiple docs.
+
+### Key Features
+
+- **Summary** — AI-generated narrative summarizing the entire case
+- **Red Flags** — MOI inconsistency, body creep, treatment gaps, and other anomalies
+- **Timeline** — Chronological view of medical events across all segments
+- **Sift** — Deduplication and irrelevant page removal. Critical for QME packets in CA where records are priced ~$3/page
+- **Ask Stream** — Investigative Q&A using the case's full summary (excluding excluded segments), insights, and case context to answer user questions
+- **Citations** — Source attribution linking claims back to the specific segment/document for auditability
+
+### Users & RBAC
+
+- **External (claims experts)** — Claim adjusters, defense attorneys, nurse case managers. Access their org's cases through the portal.
+- **Internal** — QA reviewers and Stream admins. Cross-org visibility for quality control and support.

@@ -6,23 +6,13 @@ Stream Claims builds an AI-powered medical record review platform. The backend p
 
 ## Purpose
 
-This repo provides shared context for coding agents across the Stream engineering team. Clone it locally and reference per-repo CLAUDE.md files from your project.
-
-## Usage
-
-Add to your project's CLAUDE.md:
-
-```
-See ~/stream-engineering/backend/CLAUDE.md for full backend context.
-```
+This repo provides shared context for coding agents across the Stream engineering team. Per-repo context (commands, code style, patterns) lives in each repo's own CLAUDE.md — this repo holds cross-cutting domain knowledge and shared skills.
 
 ## Repo Structure
 
-- `backend/CLAUDE.md` — Backend dev commands, code style, architecture
-- `customer-portal/CLAUDE.md` — SvelteKit patterns, auth, API
-- `data-engineering/CLAUDE.md` — dbt, Redshift, ECS pipeline
 - `shared/` — Cross-cutting domain knowledge (architecture, case lifecycle, AWS accounts, customers)
 - `skills/` — On-demand skills for coding agents
+- `eilam-claude-md.md` — Eilam's personal agent configuration
 
 ## Skills
 
