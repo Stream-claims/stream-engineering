@@ -32,6 +32,21 @@ Upload → Ingestion SF → Extract (SQS) → Synthesise (SQS) → Post-Synthesi
 DynamoDB CDC → S3 → ECS Loader → Redshift → dbt models
 ```
 
-## Domain Terms
+## Domain
+
+Stream processes **Workers' Compensation** and **Bodily Injury (BI)** insurance claims — many are complex medical claims spanning thousands of pages.
 
 A **case** is one insurance claim with uploaded documents. A **segment** is one constituent document within a case (e.g., a single medical record, one billing statement) — never a grouping of multiple docs.
+
+### Key Features
+
+- **Summary** — AI-generated narrative summarizing the entire case
+- **Red Flags** — MOI inconsistency, body creep, treatment gaps, and other anomalies
+- **Timeline** — Chronological view of medical events across all segments
+- **Sift** — Deduplication and irrelevant page removal. Critical for QME packets in CA where records are priced ~$3/page
+- **Ask Stream** — RAG-powered investigative Q&A over the case documents
+
+### Users & RBAC
+
+- **External (claims experts)** — Claim adjusters, defense attorneys, nurse case managers. Access their org's cases through the portal.
+- **Internal** — QA reviewers and Stream admins. Cross-org visibility for quality control and support.
