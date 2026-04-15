@@ -44,7 +44,8 @@ A **case** is one insurance claim with uploaded documents. A **segment** is one 
 - **Red Flags** — MOI inconsistency, body creep, treatment gaps, and other anomalies
 - **Timeline** — Chronological view of medical events across all segments
 - **Sift** — Deduplication and irrelevant page removal. Critical for QME packets in CA where records are priced ~$3/page
-- **Ask Stream** — RAG-powered investigative Q&A over the case documents
+- **Ask Stream** — Investigative Q&A using the case's full summary (excluding excluded segments), insights, and case context to answer user questions
+- **Citations** — Source attribution linking claims back to the specific segment/document for auditability
 
 ### Users & RBAC
 
