@@ -261,7 +261,9 @@ aws s3 cp "s3://SOURCE_BUCKET/merged/CASE_ID/merged.pdf" /tmp/CASE_ID-merged.pdf
 # 4. Get page count
 python3 -c "from pypdf import PdfReader; print(len(PdfReader('/tmp/CASE_ID-merged.pdf').pages))"
 
-# 5. Then follow Hybrid API steps 3-7 above
+# 5. Then follow Hybrid API steps 3-7 above, but add skipAutoSegmentation: true
+#    to the case creation body (step 6) to prevent auto-segmentation from
+#    creating duplicate segments over the copied data.
 ```
 
 ## Multiple Files
