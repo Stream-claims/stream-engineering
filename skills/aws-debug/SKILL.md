@@ -44,6 +44,12 @@ Profile naming conventions vary by person - check `CLAUDE.local.md` or ask the u
 aws configure list-profiles | grep -i <keyword>  # e.g., grep -i dev
 ```
 
+## AWS Account Structure
+
+- **Dev Account**: 804407225882 (Region: us-east-1)
+- **Staging Account**: 804407225882 (Region: us-west-2)
+- **Production Account**: 982131176572 (Region: us-west-2)
+
 ## DynamoDB Schema & Query Patterns
 
 ### Table Naming
@@ -319,10 +325,22 @@ This matters for:
 
 ### Index Naming
 
+There are two separate index families:
+
+**Case data indices** (DynamoDB CDC data for case/segment lookup):
+
 | Environment | Collection Name | Index Name |
 |-------------|-----------------|------------|
 | Dev | N/A (managed ES) | `{customer}-customer_upload-{stage}` |
 | Staging/Prod (AOSS) | `case{customer}` | `customer_upload` |
+
+**RAG/vector search indices** (OCR chunks with embeddings for content search):
+
+| Environment | Index Name |
+|-------------|------------|
+| All | `{customer}-ocr-chunks-{stage}` |
+
+These are different indices -- don't confuse them. Use `customer_upload` for case/segment queries, `ocr-chunks` for content/semantic search.
 
 ## Debugging Workflows
 
