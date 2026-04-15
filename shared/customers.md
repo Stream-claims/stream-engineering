@@ -1,48 +1,41 @@
-# Customer Deployment Matrix
+# Customers & Multi-Tenancy
 
-## Production Customers
+## Architecture
 
-| Customer | Presegment | Rehab | Case Summary | File Submission | Email Ingestion | Daily Email |
-|---|---|---|---|---|---|---|
-| Arrowhead | no | yes | no | Arrowhead | no | yes (8am PT) |
-| Sharp | yes | no | yes | Sharp + Google Drive | no | no |
-| Simplexam | yes | no | yes | Simplexam | no | no |
-| scif | yes | no | yes | no | no | yes |
-| TCS | yes | no | yes | no | no | no |
-| BerkleyEnt | yes | no | yes | no | yes | yes |
-| BerkleySW | yes | no | yes | no | yes | yes |
-| DHS | yes | no | yes | no | no | no |
-| Acadia | yes | no | yes | no | yes | yes |
-| Playground | yes | no | no | no | no | no |
-| Demo | yes | no | no | no | no | no |
-| ReportPrep | yes | no | no | no | no | no |
-
-## Dev Environments with Special Config
-
-| Customer | Special Features |
-|---|---|
-| EilamDev | Rehab enabled, Case Summary enabled |
-| AndreyDev | Rehab enabled, LLM OCR enabled |
-| DevOpsEnv | Standard config |
-| TestEnv | Standard config |
+Each customer gets an isolated CDK stack (`{CustomerName}Stack`) with its own DynamoDB tables, S3 buckets, Lambdas, and Cognito user pool. The customer portal is deployed separately per customer via SST (`{CustomerName}CustomerPortalStack`).
 
 ## Customer Types
-- **med_review** (default) — Full sidebar, complex workflow for medical record review
-- **carrier** — Streamlined interface for insurance carriers, restricted to `/carrier/*` routes
 
-## Email Ingestion
-Enabled for: BerkleyEnt, BerkleySW, Acadia
+Set via `customerType` in `sst.config.ts`. Controls portal routing and UI.
 
-## Daily Email Schedule
-- Arrowhead: 8am Pacific (15:00 UTC)
-- Others with daily email: 7pm Pacific (02:00 UTC next day)
+- **med_review** (default) -- Full sidebar, all processing modules (`/case`, `/segmentation`, `/review`, etc.)
+- **carrier** -- Streamlined interface, restricted to `/carrier/*` routes. Server-side route guards in `+layout.server.ts` enforce access.
 
-## File Submission Integrations
-- **Sharp**: SFTP upload + Google Drive per-segment PDFs
-- **Arrowhead**: Direct API submission
-- **Simplexam**: API submission
+Most production customers are `carrier` type. The `med_review` customers that have no `customerType` set (and thus default) include: Sharp, Arrowhead, Simplexam, Ethos, CowboyLegal, MclHealth, ReportPrep, TCS.
 
-## Customer-Specific Pipeline Behavior
-- **Arrowhead**: No presegmentation, has rehab processing (medical encounter grouping, rehab grouping, subjective narrative)
-- **Sharp**: Has presegmentation, Google Drive integration for segment PDFs
-- **Simplexam**: Has presegmentation, file submission to Simplexam API
+## What Varies Per Customer
+
+Each backend stack configures two key boolean flags in `bin/app.ts`:
+
+- **enableGSheet** -- Google Sheets integration for DVI tracking
+- **enableEmailIngestion** -- SES-based email ingestion (auto-creates cases from inbound email)
+
+Additional per-customer behavior is controlled by:
+
+- **Feature flags** -- Stored in DynamoDB, fetched via `/v1/feature_flags` API, cached 5 min. Controls which portal modules are visible. Managed at runtime, not in code.
+- **Email configs** -- `lib/utils/customer-email-configs.ts` defines per-customer email recipients for case completion notifications.
+- **Post-synthesis processing** -- `lib/constructs/post-synthesis-processing.ts` handles customer-specific file submission and daily email schedules.
+
+## Where to Find Current Config
+
+| What | Source of truth |
+|---|---|
+| Customer list & stack flags | `backend/bin/app.ts` -- search for `create_med_review_stack` calls |
+| Customer type (carrier vs med_review) | `customer-portal/sst.config.ts` -- search for `customerType` |
+| Feature flags (runtime) | DynamoDB `feature_flags` table per customer stack |
+| Email notification recipients | `backend/lib/utils/customer-email-configs.ts` |
+| Portal route guards | `customer-portal/src/routes/(authed)/+layout.server.ts` |
+
+## Adding a New Customer
+
+Use the `create-environment` skill, which handles both the backend CDK stack and customer portal deployment end-to-end.
