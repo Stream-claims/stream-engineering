@@ -37,18 +37,18 @@ Search for their CUSTOMER_NAME under the `} else {` / `// Local` block and updat
 ## Step 3: Start the Frontend
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-This runs `sst bind vite dev` which:
-1. Fetches secrets from AWS Secrets Manager (requires valid AWS credentials)
-2. Injects them as env vars
-3. Starts Vite dev server at `http://localhost:5173`
+This runs `sst bind vite dev` — fetches env vars from the **deployed** Lambda, injects them, and starts Vite at `http://localhost:5173`.
+
+> **Note:** `sst bind` reads from the deployed Lambda, not local `sst.config.ts`. If env values are wrong (e.g. wrong customer type), run `npx sst dev` to sync deployed state with the local config.
 
 **Common failures:**
 - `ExpiredTokenException` → AWS credentials expired. User needs to re-authenticate.
 - `CUSTOMER_NAME must be defined` → `.env` is missing or empty.
 - `Cannot find module` → Run `pnpm install`.
+- Wrong customer type / stale env → Run `npx sst dev` to sync.
 
 ## Step 4: Test in Browser
 
